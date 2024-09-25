@@ -34,17 +34,18 @@
         </div>
     </nav>
 
-<!-- Main Content -->
+<!-- Main Content --><!-- Main Content -->
 <div class="container mt-4">
     <h1>Top Stocks:</h1>
     <div class="row">
-        <!-- Loop through stocks -->
         {% for stock in stocks %}
         <div class="col-md-4">
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">{{ stock.name }}</h5>
-                    <p class="card-text">Current value: ${{ stock.value }}</p>
+                    <p>Stock Symbol: {{ stock.symbol }}</p>
+                    <!-- Link to the stock price page using the correct symbol -->
+                    <a href="/stock/{{ stock.symbol }}" class="btn btn-primary">View Stock Price</a>
                 </div>
             </div>
         </div>
