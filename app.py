@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for, flash
 import requests
 import matplotlib
 matplotlib.use('Agg')  # Use the 'Agg' backend for non-interactive plotting
@@ -7,7 +7,21 @@ from io import BytesIO
 import base64
 
 
+from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://username:password@localhost/capstone'
+db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 ALPHA_VANTAGE_API_KEY = 'VJI406IR1P9ZNCZA'
 
@@ -22,16 +36,48 @@ stocks = [
 def index():
     return render_template('index.html', stocks=stocks)
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+
+        # Add the user to the database
+        new_user = User(username=username, password=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+        
+        flash('Account created successfully! Please log in.', 'success')
+        return redirect(url_for('login'))
+    return render_template('register.html')
+
 # Route for login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Handle form submission
         username = request.form['username']
         password = request.form['password']
-        # Add authentication logic
-        return redirect('/')
+        
+        # Find the user by username
+        user = User.query.filter_by(username=username).first()
+        
+        # Check if user exists and the password matches
+        if user and bcrypt.check_password_hash(user.password, password):
+            login_user(user)
+            flash('Login successful!', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Login failed. Check username and password.', 'danger')
+
     return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('login'))
 
 # Dynamic route for company pages
 @app.route('/company/<int:company_id>')
