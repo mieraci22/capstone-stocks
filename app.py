@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, flash
 import requests
 import matplotlib
 matplotlib.use('Agg')  # Use the 'Agg' backend for non-interactive plotting
@@ -6,18 +6,11 @@ import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
 
+from __init__ import create_app, db, bcrypt, login_manager
+from models import User  # Import the User model
+from flask_login import login_user, login_required, logout_user, current_user
 
-from flask_sqlalchemy import SQLAlchemy
-from flask_bcrypt import Bcrypt
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://username:password@localhost/capstone'
-db = SQLAlchemy(app)
-bcrypt = Bcrypt(app)
-login_manager = LoginManager(app)
-login_manager.login_view = 'login'
+app = create_app()
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -25,16 +18,19 @@ def load_user(user_id):
 
 ALPHA_VANTAGE_API_KEY = 'VJI406IR1P9ZNCZA'
 
-# Dummy stock data (ensure symbols are correctly matched with API)
+# Dummy stock data
 stocks = [
     {'id': 1, 'name': 'Apple', 'symbol': 'AAPL'},
     {'id': 2, 'name': 'Amazon', 'symbol': 'AMZN'},
     {'id': 3, 'name': 'Tesla', 'symbol': 'TSLA'}
 ]
 
+# Define the routes
 @app.route('/')
 def index():
     return render_template('index.html', stocks=stocks)
+
+# Other routes (register, login, logout, stock, etc.)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
